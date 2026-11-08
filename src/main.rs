@@ -4,6 +4,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Read};
 use std::path::Path;
+use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -36,9 +37,68 @@ fn main() {
         .and_then(|v| v.as_str())
         .unwrap_or("src");
 
+    let pre_cfg = ctx
+        .get("config")
+        .and_then(|c| c.get("preprocessor"))
+        .and_then(|p| p.get("asciinema"));
+    let version = pre_cfg
+        .and_then(|c| c.get("version"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let download = pre_cfg
+        .and_then(|c| c.get("download"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+
+    if download {
+        ensure_assets(root, version.as_deref());
+    }
+
     process_book(&mut book, root, src_dir);
 
     println!("{}", serde_json::to_string(&book).unwrap());
+}
+
+fn ensure_assets(root: &str, version: Option<&str>) {
+    if root.is_empty() {
+        return;
+    }
+    let dir = Path::new(root).join("asciinema");
+    if let Err(e) = fs::create_dir_all(&dir) {
+        eprintln!("mdbook-asciinema: {}", e);
+        return;
+    }
+    let files = ["asciinema-player.min.js", "asciinema-player.css"];
+    let base = match version {
+        Some(v) if !v.is_empty() && v != "latest" => {
+            let tag = if v.starts_with('v') {
+                v.to_string()
+            } else {
+                format!("v{}", v)
+            };
+            format!(
+                "https://github.com/asciinema/asciinema-player/releases/download/{}/",
+                tag
+            )
+        }
+        _ => "https://github.com/asciinema/asciinema-player/releases/latest/download/".to_string(),
+    };
+    for file in files {
+        let path = dir.join(file);
+        if path.exists() {
+            continue;
+        }
+        let url = format!("{}{}", base, file);
+        let status = Command::new("curl")
+            .args(["-fsSL", "-o"])
+            .arg(&path)
+            .arg(&url)
+            .status();
+        match status {
+            Ok(s) if s.success() => {}
+            _ => eprintln!("mdbook-asciinema: failed to download {}", url),
+        }
+    }
 }
 
 fn process_book(book: &mut Value, root: &str, src_dir: &str) {
@@ -92,6 +152,13 @@ fn process_chapter(ch: &mut Value, root: &str, src_dir: &str) {
 }
 
 fn transform_content(content: &str, root: &str, src_dir: &str, base_dir: &str) -> (String, bool) {
+    let asset_prefix = if base_dir.is_empty() {
+        String::new()
+    } else {
+        let depth = base_dir.split('/').filter(|s| !s.is_empty()).count();
+        "../".repeat(depth)
+    };
+
     let re = Regex::new(r#"!\[([^\]]*)\]\(([^)]+\.cast)(?:\s+"[^"]*")?\)"#).unwrap();
     let mut changed = false;
     let result = re.replace_all(content, |caps: &regex::Captures| {
@@ -149,6 +216,13 @@ fn transform_content(content: &str, root: &str, src_dir: &str, base_dir: &str) -
     let result = result.to_string();
     if result != content {
         changed = true;
+    }
+    if changed {
+        let tags = format!(
+            "<link rel=\"stylesheet\" href=\"{}asciinema/asciinema-player.css\">\n<script src=\"{}asciinema/asciinema-player.min.js\"></script>\n",
+            asset_prefix, asset_prefix
+        );
+        return (format!("{}{}", tags, result), true);
     }
     (result, changed)
 }

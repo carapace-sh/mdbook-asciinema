@@ -26,11 +26,11 @@ unless an explicit `poster` is given. The cast is not loaded before playing
 
 ```toml
 [preprocessor.asciinema]
-
-[output.html]
-additional-js = ["asciinema/asciinema-player.min.js"]
-additional-css = ["asciinema/asciinema-player.css"]
 ```
 
 3. Place `.cast` files under `src/` and reference them with image syntax.
 4. Keep the asciinema player assets in `asciinema/` at the book root.
+
+The preprocessor implicitly adds the asciinema player JavaScript and CSS
+to pages that embed a recording, so no `additional-js`/`additional-css`
+entries are required.
