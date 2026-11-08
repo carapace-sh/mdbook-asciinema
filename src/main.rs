@@ -36,6 +36,11 @@ fn main() {
         .and_then(|b| b.get("src"))
         .and_then(|v| v.as_str())
         .unwrap_or("src");
+    let asset_base = if root.is_empty() {
+        src_dir.to_string()
+    } else {
+        Path::new(root).join(src_dir).to_string_lossy().to_string()
+    };
 
     let pre_cfg = ctx
         .get("config")
@@ -51,7 +56,7 @@ fn main() {
         .unwrap_or(true);
 
     if download {
-        ensure_assets(root, version.as_deref());
+        ensure_assets(&asset_base, version.as_deref());
     }
 
     process_book(&mut book, root, src_dir);
