@@ -28,8 +28,11 @@ jobs:
         sed -i "s_0.0.0-PLACEHOLDER_${GITHUB_REF/refs\/tags\/v/}_" Cargo.toml Cargo.lock
         git update-index --assume-unchanged Cargo.toml Cargo.lock
 
+    - name: Add musl target
+      run: rustup target add x86_64-unknown-linux-musl
+
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --target x86_64-unknown-linux-musl --verbose
 
     - name: Run tests
       run: cargo test --verbose
