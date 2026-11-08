@@ -24,7 +24,9 @@ jobs:
 
     - name: Set version by tag
       if: startsWith(github.ref, 'refs/tags/v')
-      run: sed -i "s_0.0.0-PLACEHOLDER_${GITHUB_REF/refs\/tags\/v/}_" Cargo.toml Cargo.lock
+      run: |
+        sed -i "s_0.0.0-PLACEHOLDER_${GITHUB_REF/refs\/tags\/v/}_" Cargo.toml Cargo.lock
+        git update-index --assume-unchanged Cargo.toml Cargo.lock
 
     - name: Build
       run: cargo build --verbose
