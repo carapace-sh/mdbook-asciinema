@@ -26,7 +26,6 @@ unless an explicit `poster` is given. The cast is not loaded before playing
 
 ```toml
 [preprocessor.asciinema]
-command = "/path/to/mdbook-asciinema"
 
 [output.html]
 additional-js = ["asciinema/asciinema-player.min.js"]
