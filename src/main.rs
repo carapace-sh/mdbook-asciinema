@@ -208,13 +208,22 @@ fn transform_content(content: &str, root: &str, src_dir: &str, base_dir: &str) -
 
         let id = format!("asciinema-{}", COUNTER.fetch_add(1, Ordering::SeqCst));
 
+        let cols = opts
+            .get("cols")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(108);
+        let rows = opts
+            .get("rows")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(24);
+
         let src_json = serde_json::to_string(src).unwrap();
         let id_json = serde_json::to_string(&id).unwrap();
         let opts_json = serde_json::to_string(&Value::Object(opts.clone())).unwrap();
 
         format!(
-            "<div id={} class=\"asciinema-player\"></div>\n<script>\nwindow.addEventListener(\"load\", function () {{\n  AsciinemaPlayer.create({}, document.getElementById({}), {});\n}});\n</script>",
-            id_json, src_json, id_json, opts_json
+            "<div id={} class=\"asciinema-player\" style=\"font-size: 15px; line-height: 1.3333333333; width: {}ch; height: {}lh;\"></div>\n<script>\nwindow.addEventListener(\"load\", function () {{\n  AsciinemaPlayer.create({}, document.getElementById({}), {});\n}});\n</script>",
+            id_json, cols, rows, src_json, id_json, opts_json
         )
     });
 
