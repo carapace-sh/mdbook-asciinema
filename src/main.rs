@@ -227,7 +227,7 @@ fn transform_content(content: &str, root: &str, src_dir: &str, base_dir: &str) -
             "<link rel=\"stylesheet\" href=\"{}asciinema/asciinema-player.css\">\n<script src=\"{}asciinema/asciinema-player.min.js\"></script>\n",
             asset_prefix, asset_prefix
         );
-        return (format!("{}{}", tags, result), true);
+        return (format!("{}\n{}", tags, result), true);
     }
     (result, changed)
 }
